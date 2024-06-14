@@ -1,8 +1,8 @@
 {
-  "name": "nest-basic-hoidanit",
+  "name": "nest-basic",
   "version": "0.0.1",
-  "description": "https://hoidanit.com.vn/",
-  "author": "Hỏi Dân IT",
+  "description": "https://pildo.shop",
+  "author": "thold",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -39,7 +39,8 @@
     "passport-jwt": "4.0.1",
     "passport-local": "1.0.0",
     "reflect-metadata": "0.1.13",
-    "rxjs": "7.2.0"
+    "rxjs": "7.2.0",
+    "soft-delete-plugin-mongoose": "1.0.17"
   },
   "devDependencies": {
     "@nestjs/cli": "9.4.2",
