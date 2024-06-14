@@ -10,11 +10,19 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
+  // app.useGlobalGuards(new JwtAuthGuard(reflector));
   app.useStaticAssets(join(__dirname, '..', 'public')); // access js, css, images
   app.setBaseViewsDir(join(__dirname, '..', 'views')); // store view engine (html)
   app.setViewEngine('ejs');
   app.useGlobalPipes(new ValidationPipe());
+  // congig cors
+  app.enableCors(
+    {
+      "origin": "*",
+      "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+      "preflightContinue": false,
+    }
+  );
   await app.listen(configService.get<string>('PORT'));
 }
 bootstrap();
