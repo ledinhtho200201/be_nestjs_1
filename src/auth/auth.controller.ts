@@ -12,6 +12,7 @@ export class AuthController {
     ) { }
 
     @Public()
+    @ResponseMessage('User Login')
     @UseGuards(LocalAuthGuard)
     @Post('/login')
     handleLogin(@Request() req) {
