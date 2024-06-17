@@ -1,16 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
+import { User as UserM, UserDocument } from './schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { compareSync, genSaltSync, hashSync } from 'bcryptjs';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
+import { IUser } from './users.interface';
+import { User } from 'src/decorator/customize';
+import aqp from 'api-query-params';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name)
+    @InjectModel(UserM.name)
     private userModel: SoftDeleteModel<UserDocument>) { }
 
   getHashPassword = (plainText: string) => {
@@ -19,18 +22,74 @@ export class UsersService {
     return hash;
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, @User() user: IUser) {
+    const { email } = createUserDto;
+    // add logic check email
+    const isExist = await this.userModel.findOne({ email });
+    if (isExist) {
+      throw new BadRequestException(`Email: ${email} đã tồn tại. Vui lòng sử dụng email khác.`)
+    }
     const hashPassword = this.getHashPassword(createUserDto.password);
-    let user = await this.userModel.create({
-      email: createUserDto.email,
+    let newUser = await this.userModel.create({
+      ...createUserDto,
       password: hashPassword,
-      name: createUserDto.name,
+      createdBy: {
+        _id: user._id,
+        email: user.email
+      }
     })
-    return user;
+    return {
+      _id: newUser._id,
+      createdAt: newUser.createdAt
+    };
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async register(user: RegisterUserDto) {
+    const { name, email, password, age, gender, address } = user;
+    // add logic check email
+    const isExist = await this.userModel.findOne({ email });
+    if (isExist) {
+      throw new BadRequestException(`Email: ${email} đã tồn tại. Vui lòng sử dụng email khác.`)
+    }
+    const hashPassword = this.getHashPassword(password);
+    let newRegister = await this.userModel.create({
+      name: name,
+      email: email,
+      password: hashPassword,
+      age: age,
+      gender: gender,
+      address: address,
+      role: 'USER'
+    })
+    return (newRegister);
+  }
+
+  async findAll(currentPage: number, limit: number, qs: string) {
+    const { filter, sort, population } = aqp(qs);
+    delete filter.page;
+    delete filter.limit;
+
+    let offset = (+currentPage - 1) * (+limit);
+    let defaultLimit = +limit ? +limit : 10;
+    const totalItems = (await this.userModel.find(filter)).length;
+    const totalPages = Math.ceil(totalItems / defaultLimit);
+
+    const result = await this.userModel.find(filter).select("-password")
+      .skip(offset)
+      .limit(defaultLimit)
+      .sort(sort as any)
+      .populate(population)
+      .exec();
+
+    return {
+      meta: {
+        current: currentPage,
+        pageSize: limit,
+        pages: totalPages,
+        total: totalItems
+      },
+      result,
+    }
   }
 
   findOne(id: string) {
@@ -39,7 +98,7 @@ export class UsersService {
     }
     return this.userModel.findOne({
       _id: id
-    })
+    }).select("-password");
   }
 
   findOneByUsername(username: string) {
@@ -52,14 +111,32 @@ export class UsersService {
     return compareSync(password, hash);
   }
 
-  async update(updateUserDto: UpdateUserDto) {
-    return await this.userModel.updateOne({ _id: updateUserDto._id }, { ...updateUserDto });
+  async update(updateUserDto: UpdateUserDto, user: IUser) {
+    return await this.userModel.updateOne({ _id: updateUserDto._id },
+      {
+        ...updateUserDto,
+        createdBy: {
+          _id: user._id,
+          email: user.email
+        }
+      });
   }
 
-  remove(id: string) {
+  async remove(id: string, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return `not found user`;
     }
+    await this.userModel.updateOne(
+      { _id: id },
+      {
+        deletedBy: {
+          _id: user._id,
+          email: user.email
+        },
+        // isDeleted: true,
+        // deletedAt: new Date()
+      },
+    )
     return this.userModel.softDelete({
       _id: id
     })
