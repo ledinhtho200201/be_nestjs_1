@@ -16,6 +16,7 @@ export class JobsController {
   }
 
   @Get()
+  @Public()
   @ResponseMessage('Fetch jobs with pagination')
   findAll(
     @Query("current") currentPage: string,
@@ -25,9 +26,9 @@ export class JobsController {
     return this.jobsService.findAll(+currentPage, +limit, qs);
   }
 
+  @Get(':id')
   @Public()
   @ResponseMessage('Fetch a job by id')
-  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);
   }
