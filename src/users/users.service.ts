@@ -115,7 +115,7 @@ export class UsersService {
     return await this.userModel.updateOne({ _id: updateUserDto._id },
       {
         ...updateUserDto,
-        createdBy: {
+        updatedBy: {
           _id: user._id,
           email: user.email
         }

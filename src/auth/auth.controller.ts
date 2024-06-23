@@ -32,7 +32,7 @@ export class AuthController {
 
     @ResponseMessage('Get user information')
     @Get('/account')
-    handleGetAccount(@User() user: IUser) {
+    handleGetAccount(@User() user: IUser) { // req.user
         return { user };
     }
 
