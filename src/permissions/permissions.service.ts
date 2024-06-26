@@ -16,8 +16,8 @@ export class PermissionsService {
 
   async create(createPermissionDto: CreatePermissionDto, user: IUser) {
     const { apiPath, method } = createPermissionDto;
-    if ((await this.permissionModel.findOne({ $or: [{ apiPath: createPermissionDto.apiPath }, { method: createPermissionDto.method }] }))) {
-      throw new ConflictException(`Permission với apiPath=${apiPath} hoặc method=${method} đã tồn tại, vui lòng kiểm tra lại!`);
+    if ((await this.permissionModel.findOne({ $and: [{ apiPath: createPermissionDto.apiPath }, { method: createPermissionDto.method }] }))) {
+      throw new ConflictException(`Permission với apiPath=${apiPath} với method=${method} đã tồn tại, vui lòng kiểm tra lại!`);
     }
     const newPermisstion = await this.permissionModel.create({
       ...createPermissionDto,
